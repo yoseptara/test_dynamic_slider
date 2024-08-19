@@ -11,21 +11,107 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar:
-            AppBar(title: const Text('Custom Rounding Step Slider Example')),
-        body: const Center(
-          child: MathematicalStepSlider(
-            min: 85, // Original minimum value
-            max: 49999, // Original maximum value
-          ),
-        ),
+        appBar: AppBar(title: const Text('Dynamic Slider Example')),
+        body: const _DemoView(),
       ),
     );
   }
 }
 
-class MathematicalStepSlider extends StatefulWidget {
-  const MathematicalStepSlider({
+class _DemoView extends StatefulWidget {
+  const _DemoView();
+
+  @override
+  State<_DemoView> createState() => _DemoViewState();
+}
+
+class _DemoViewState extends State<_DemoView> {
+  final GlobalKey<FormState> formKey = GlobalKey();
+  final TextEditingController inputMinCtrl = TextEditingController();
+  final TextEditingController inputMaxCtrl = TextEditingController();
+
+  double sliderMinValue = 0;
+  double sliderMaxValue = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Form(
+            key: formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  TextFormField(
+                      controller: inputMinCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Input Min'),
+                      validator: (String? val) {
+                        if (val == null || val.isEmpty) {
+                          return 'Cannot empty';
+                        }
+
+                        return null;
+                      }),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  TextFormField(
+                    controller: inputMaxCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Input Max'),
+                    validator: (String? val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Cannot empty';
+                      }
+
+                      if ((num.tryParse(inputMinCtrl.text) ?? 0) >=
+                          (num.tryParse(inputMaxCtrl.text) ?? 0)) {
+                        return 'max should be > min';
+                      }
+
+                      return null;
+                    },
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      if (formKey.currentState?.validate() == true) {
+                        setState(() {
+                          sliderMinValue = double.tryParse(inputMinCtrl.text) ?? 0;
+                          sliderMaxValue = double.tryParse(inputMaxCtrl.text) ?? 0;
+                        });
+                      }
+                    },
+                    child: const Text('Updated min & max'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 80,
+          ),
+          DynamicSlider(
+            min: sliderMinValue, // Original minimum value
+            max: sliderMaxValue, // Original maximum value
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DynamicSlider extends StatefulWidget {
+  const DynamicSlider({
     super.key,
     required this.min,
     required this.max,
@@ -35,10 +121,10 @@ class MathematicalStepSlider extends StatefulWidget {
   final double max;
 
   @override
-  State<MathematicalStepSlider> createState() => _MathematicalStepSliderState();
+  State<DynamicSlider> createState() => _DynamicSliderState();
 }
 
-class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
+class _DynamicSliderState extends State<DynamicSlider> {
   double ceilMin = 0;
   double ceilMax = 0;
   double _currentValue = 0;
@@ -46,10 +132,25 @@ class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
   @override
   void initState() {
     super.initState();
-    ceilMin = customCeil(widget.min);
-    ceilMax = customCeil(widget.max);
-    _currentValue = ceilMin;
+    _updateSliderRange();
   }
+
+  @override
+  void didUpdateWidget(covariant DynamicSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.min != oldWidget.min || widget.max != oldWidget.max) {
+      _updateSliderRange();
+    }
+  }
+
+  void _updateSliderRange() {
+    setState(() {
+      ceilMin = customCeil(widget.min);
+      ceilMax = customCeil(widget.max);
+      _currentValue = ceilMin;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -61,13 +162,23 @@ class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
           value: _currentValue,
           min: ceilMin,
           max: ceilMax,
-          divisions: 5,
+          divisions: 4,
           label: _currentValue.toString(),
           onChanged: (double value) {
             setState(() {
               _currentValue = value;
             });
           },
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Min Value: ${ceilMin.toStringAsFixed(0)}',
+          style: const TextStyle(fontSize: 24),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Max Value: ${ceilMax.toStringAsFixed(0)}',
+          style: const TextStyle(fontSize: 24),
         ),
         const SizedBox(height: 20),
         Text(
@@ -114,7 +225,7 @@ class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
     if (secondDigit > 5 && secondDigit <= 9) {
       // Increment the first digit by 1 and adjust the rest to zero
       firstDigit += 1;
-       return double.tryParse(('${firstDigit}0$otherDigitsZerosStr')) ?? 0;
+      return double.tryParse(('${firstDigit}0$otherDigitsZerosStr')) ?? 0;
     }
 
     //Return the value if there is no more digit after second digit
