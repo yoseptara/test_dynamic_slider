@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -40,9 +39,17 @@ class MathematicalStepSlider extends StatefulWidget {
 }
 
 class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
-  late double ceilMin = customCeil(widget.min);
-  late double ceilMax = customCeil(widget.max);
-  late double _currentValue = ceilMin;
+  double ceilMin = 0;
+  double ceilMax = 0;
+  double _currentValue = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ceilMin = customCeil(widget.min);
+    ceilMax = customCeil(widget.max);
+    _currentValue = ceilMin;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,23 +101,23 @@ class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
 
     String otherDigitsStr =
         intValueStr.length > 2 ? intValueStr.substring(2) : '';
-    final otherDigitsStrLength = otherDigitsStr.length;
+    final int otherDigitsStrLength = otherDigitsStr.length;
+
+    final String otherDigitsZerosStr = '0' * otherDigitsStrLength;
 
     // Handle the rounding logic based on the second digit
     if (secondDigit >= 1 && secondDigit <= 4) {
       // Add 5 to the first digit and adjust the rest to zero
-      int addition =
-          (5 * pow(10, otherDigitsStrLength)).toInt(); // Fix the magnitude here
-      return (firstDigit * pow(10, otherDigitsStrLength + 1) + addition)
-          .toDouble();
+      return double.tryParse(('${firstDigit}5$otherDigitsZerosStr')) ?? 0;
     }
 
     if (secondDigit > 5 && secondDigit <= 9) {
       // Increment the first digit by 1 and adjust the rest to zero
       firstDigit += 1;
-      return (firstDigit * pow(10, otherDigitsStrLength + 1)).toDouble();
+       return double.tryParse(('${firstDigit}0$otherDigitsZerosStr')) ?? 0;
     }
 
+    //Return the value if there is no more digit after second digit
     if (otherDigitsStrLength <= 0) {
       return value;
     }
@@ -126,14 +133,12 @@ class _MathematicalStepSliderState extends State<MathematicalStepSlider> {
     }
 
     if (secondDigit == 0) {
-      int addition = (5 * pow(10, otherDigitsStrLength)).toInt();
-      return (firstDigit * pow(10, otherDigitsStrLength + 1) + addition)
-          .toDouble();
+      return double.tryParse(('${firstDigit}5$otherDigitsZerosStr')) ?? 0;
     }
 
     if (secondDigit == 5) {
       firstDigit += 1;
-      return (firstDigit * pow(10, otherDigitsStrLength + 1)).toDouble();
+      return double.tryParse(('${firstDigit}0$otherDigitsZerosStr')) ?? 0;
     }
 
     return value;
