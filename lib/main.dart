@@ -162,7 +162,7 @@ class _DynamicSliderState extends State<DynamicSlider> {
           value: _currentValue,
           min: ceilMin,
           max: ceilMax,
-          divisions: 4,
+          divisions: 5,
           label: _currentValue.toString(),
           onChanged: (double value) {
             setState(() {
@@ -193,65 +193,39 @@ class _DynamicSliderState extends State<DynamicSlider> {
     if (value <= 50) return 50;
     if (value > 50 && value <= 100) return 100;
 
+    assert(value > 10, 'Value only single digit');
+
     // Split the string at the decimal point
-    List<String> parts = value.toString().split('.');
+    final List<String> parts = value.toString().split('.');
 
     // Get the integer and decimal parts
-    String intValueStr = parts[0];
-    String decimalValueStr = parts.length > 1 ? parts[1] : '0';
+    final String integerValue = parts[0];
+    final int lengthExcludeFirstTwo = integerValue.length - 2;
 
-    // Extract the first digit safely
-    int? firstDigit =
-        intValueStr.isNotEmpty ? int.tryParse(intValueStr[0]) : null;
-    if (firstDigit == null) return value;
+    // Extract the second digit
+    final secondDigit = int.parse(integerValue[1]);
+    final isZeroOrFive = secondDigit == 0 || secondDigit == 5;
 
-    // Extract the second digit safely
-    int? secondDigit =
-        intValueStr.length > 1 ? int.tryParse(intValueStr[1]) : null;
-    if (secondDigit == null) return value;
-
-    String otherDigitsStr =
-        intValueStr.length > 2 ? intValueStr.substring(2) : '';
-    final int otherDigitsStrLength = otherDigitsStr.length;
-
-    final String otherDigitsZerosStr = '0' * otherDigitsStrLength;
-
-    // Handle the rounding logic based on the second digit
-    if (secondDigit >= 1 && secondDigit <= 4) {
-      // Add 5 to the first digit and adjust the rest to zero
-      return double.tryParse(('${firstDigit}5$otherDigitsZerosStr')) ?? 0;
-    }
-
-    if (secondDigit > 5 && secondDigit <= 9) {
-      // Increment the first digit by 1 and adjust the rest to zero
-      firstDigit += 1;
-      return double.tryParse(('${firstDigit}0$otherDigitsZerosStr')) ?? 0;
-    }
-
-    //Return the value if there is no more digit after second digit
-    if (otherDigitsStrLength <= 0) {
+    // Check if the value already rounded to the nearest 5
+    final isRoundedToNearestFive =
+        isZeroOrFive && _noRemainder(value, lengthExcludeFirstTwo * 10);
+    if (isRoundedToNearestFive) {
       return value;
     }
 
-    double? otherDigitsNum = double.tryParse([
-          otherDigitsStr,
-          if (decimalValueStr.isNotEmpty) decimalValueStr
-        ].join('.')) ??
-        0;
+    //markup by 1 if the second digit is 0 or 5
+    final twoDigitsUpfront =
+        int.parse(integerValue.substring(0, 2)) + (isZeroOrFive ? 1 : 0);
+    final roundedValue = _roundedValueToNearestFive(twoDigitsUpfront);
+    final zeroString = '0' * lengthExcludeFirstTwo;
+    return double.tryParse(('$roundedValue$zeroString')) ?? 0;
+  }
 
-    if (otherDigitsNum <= 0) {
-      return value;
-    }
+  bool _noRemainder(double value, double divisor) {
+    return value % divisor == 0;
+  }
 
-    if (secondDigit == 0) {
-      return double.tryParse(('${firstDigit}5$otherDigitsZerosStr')) ?? 0;
-    }
-
-    if (secondDigit == 5) {
-      firstDigit += 1;
-      return double.tryParse(('${firstDigit}0$otherDigitsZerosStr')) ?? 0;
-    }
-
-    return value;
+  int _roundedValueToNearestFive(int value) {
+    return (value * 0.2).ceil() ~/ 0.2;
   }
 }
